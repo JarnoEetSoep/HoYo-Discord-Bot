@@ -88,9 +88,13 @@ pub async fn run(database: &sqlx::SqlitePool, command: &ApplicationCommandIntera
                 .fetch_all(database).await.unwrap().into_iter().map::<String, _>(|id| id.get(0)).collect::<Vec<String>>();
             
             for discord_id in discord_ids {
-                UserId(discord_id.trim().parse::<u64>().unwrap()).create_dm_channel(&ctx).await.unwrap().send_message(&ctx.http, |msg| {
+                let success = UserId(discord_id.trim().parse::<u64>().unwrap()).create_dm_channel(&ctx).await.unwrap().send_message(&ctx.http, |msg| {
                     msg.content(output.clone())
-                }).await.unwrap();
+                }).await;
+
+                if let Err(error) = success {
+                    println!("Error sending confirmation to `{}`:\n {}", discord_id.trim(), error);
+                }
             }
         }
     }
